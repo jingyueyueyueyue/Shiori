@@ -36,7 +36,7 @@ class TranslationController(context: Context) {
         try {
             connection.connectTimeout = 15_000
             connection.readTimeout = 20_000
-            connection.setRequestProperty("User-Agent", "Shiori/0.1 (Android)")
+            connection.setRequestProperty("User-Agent", "Shiori/0.1.2 (Android)")
             connection.setRequestProperty("Accept", "application/json")
             if (key.isNotBlank()) connection.setRequestProperty("Authorization", "Bearer ${key.trim()}")
             if (connection.responseCode !in 200..299) throw IOException("HTTP ${connection.responseCode}")

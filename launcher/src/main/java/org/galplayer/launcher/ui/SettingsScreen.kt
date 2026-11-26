@@ -197,14 +197,14 @@ private fun SettingsSection(
             }, "开启后可在单游戏管理中使用隔离存档启动")
             OutlinedButton(onClick = onExportDiagnostics) { Text("导出双引擎诊断日志 ZIP") }
             Spacer(Modifier.height(12.dp))
-            Text("Shiori · 栞 0.1.1", fontWeight = FontWeight.Bold)
+            Text("Shiori 0.1.2", fontWeight = FontWeight.Bold)
             Text("applicationId：io.jingyue.shiori")
             Text("Majiro：org.majiro.player · :game")
             Text("CatSystem2：org.catsystem2.player · :cs2")
             Text("两套引擎与原生库已内置，无需另外下载。", style = MaterialTheme.typography.bodySmall)
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Text("GitHub 项目", fontWeight = FontWeight.Bold)
-            ProjectLink("Shiori · 栞", "https://github.com/jingyueyueyueyue/Shiori")
+            ProjectLink("Shiori", "https://github.com/jingyueyueyueyue/Shiori")
             ProjectLink("Majiro", "https://github.com/jingyueyueyueyue/majiro-emulator")
             ProjectLink("CatSystem2", "https://github.com/jingyueyueyueyue/CatSystem2-emulator")
             var licenses by remember { mutableStateOf(false) }

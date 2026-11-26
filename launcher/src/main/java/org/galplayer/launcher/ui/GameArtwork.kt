@@ -47,7 +47,7 @@ fun rememberArtwork(source: String?, maximumSide: Int = 900): ImageBitmap? {
                     try {
                         connection.connectTimeout = 12_000
                         connection.readTimeout = 18_000
-                        connection.setRequestProperty("User-Agent", "Shiori/0.1 (Android)")
+                        connection.setRequestProperty("User-Agent", "Shiori/0.1.2 (Android)")
                         connection.inputStream.use { ImageCodec.readLimited(it, 24 * 1024 * 1024) }
                     } finally {
                         connection.disconnect()

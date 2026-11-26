@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.galplayer.launcher.artwork.ArtworkCache
+import org.galplayer.launcher.artwork.TitleNormalizer
 import org.galplayer.launcher.cover.CoverCandidate
 import org.galplayer.launcher.cover.CoverSearchClient
 import org.galplayer.launcher.model.CoverOrigin
@@ -257,8 +258,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun openCoverSearch(game: GameEntry) {
         coverSearchJob?.cancel()
-        coverSearchMutable.value = CoverSearchState(game.id, game.displayTitle)
-        searchCovers(game.displayTitle)
+        val productId = TitleNormalizer.productId(game.documentId)
+        val query = listOfNotNull(game.displayTitle, productId).joinToString(" ")
+        coverSearchMutable.value = CoverSearchState(game.id, query)
+        searchCovers(query)
     }
 
     fun closeCoverSearch() {
@@ -272,8 +275,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         coverSearchJob = viewModelScope.launch(Dispatchers.IO) {
             coverSearchMutable.update { it.copy(query = query, loading = true, error = null) }
             try {
-                val results = covers.search(query, store.settings.value.coverPriority)
-                coverSearchMutable.update { it.copy(results = results, loading = false, error = if (results.isEmpty()) "未找到封面" else null) }
+                val report = covers.searchDetailed(query, store.settings.value.coverPriority)
+                val error = when {
+                    report.results.isEmpty() && report.failures.isNotEmpty() ->
+                        "封面源连接失败：${report.failures.joinToString("；")}"
+                    report.results.isEmpty() -> "未找到封面"
+                    report.failures.isNotEmpty() -> "部分来源不可用：${report.failures.joinToString("；")}"
+                    else -> null
+                }
+                coverSearchMutable.update { it.copy(results = report.results, loading = false, error = error) }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
@@ -439,7 +449,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private suspend fun fetchAutomatic(game: GameEntry) {
         try {
             val settings = store.settings.value
-            val candidate = covers.bestAutomatic(game.displayTitle, settings.coverPriority, settings.adultProtection) ?: return
+            val productId = TitleNormalizer.productId(game.documentId)
+            val query = listOfNotNull(game.displayTitle, productId).joinToString(" ")
+            val candidate = covers.bestAutomatic(query, settings.coverPriority, settings.adultProtection) ?: return
             val bytes = covers.download(candidate.url)
             coverWrite(game.id) {
                 val current = store.games.value.firstOrNull { it.id == game.id } ?: return@coverWrite

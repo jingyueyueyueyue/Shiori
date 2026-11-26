@@ -88,7 +88,10 @@ class MetadataExtractor(private val reader: SafReader) {
     private fun metadataTitle(value: String): String? = value
         .replace(Regex("^(?:\\$[0-9A-Fa-f-]+\\$)+"), "")
         .trim()
-        .takeIf { it.isNotBlank() && '\uFFFD' !in it && it.none { char -> char < ' ' && char != '\t' } }
+        .takeIf {
+            it.isNotBlank() && '\uFFFD' !in it &&
+                it.none { char -> char < ' ' && char != '\t' || char in '\uFF61'..'\uFF9F' }
+        }
 
     private companion object {
         val EXCLUDED_EXE = Regex("(?i)(?:uninst|unins\\d*|install|setup|menu|launcher|crash|report)")
