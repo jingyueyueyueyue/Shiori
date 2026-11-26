@@ -1,0 +1,9 @@
+<resources>
+    <string name="performance_show">性能监控</string>
+    <string name="performance_hide">关闭性能监控</string>
+    <string name="performance_frames">游戏画面提交帧率</string>
+    <string name="performance_cpu">播放器 CPU 使用率</string>
+    <string name="performance_ram">设备内存使用率</string>
+    <string name="performance_power">电池放电功率</string>
+    <string name="performance_external_power">外接电源</string>
+</resources>

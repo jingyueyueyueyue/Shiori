@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider
+            android:name="org.catsystem2.player.PlayerEngineActivity$GameFilesProvider"
+            android:authorities="${applicationId}.gamefiles"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+        <activity
+            android:name="org.catsystem2.player.PlayerActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:process=":cs2"
+            android:screenOrientation="sensorLandscape" />
+        <activity
+            android:name="org.catsystem2.player.TweetActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:process=":cs2" />
+    </application>
+</manifest>

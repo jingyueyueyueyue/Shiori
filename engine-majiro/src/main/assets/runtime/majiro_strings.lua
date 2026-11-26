@@ -1,0 +1,322 @@
+-- Character-based operations over UTF-8 display strings, with CP932 hashing.
+local M={}
+local function cstring(text)return text:match('^[^%z]*')end
+-- Native strings are byte strings, including old system paths containing
+-- malformed CP932 and duplicate CP932 mappings. Reserve plane-15 private-use
+-- characters for units which cannot make an exact decode/encode roundtrip.
+-- The representation survives the ordinary portable save codec and slicing.
+local native_unit='\243[\176-\191][\128-\191][\128-\191]'
+local function native_escape(code)
+  return string.char(243,176+math.floor(code/4096),
+    128+math.floor(code/64)%64,128+code%64)
+end
+function M.native_encoder(encode)
+  return function(text)
+    if not text:find(native_unit)then return encode(text)end
+    local out,position={},1
+    for first,unit,last in text:gmatch('()('..native_unit..')()')do
+      if first>position then out[#out+1]=encode(text:sub(position,first-1))end
+      local code=(unit:byte(2)-176)*4096+(unit:byte(3)-128)*64+unit:byte(4)-128
+      out[#out+1]=code<256 and string.char(code)or string.char(math.floor(code/256),code%256)
+      position=last
+    end
+    if position<=#text then out[#out+1]=encode(text:sub(position))end
+    return table.concat(out)
+  end
+end
+function M.native_decoder(decode,encode)
+  local cache={}
+  return function(raw)
+    local out,position={},1
+    while position<=#raw do
+      local byte=raw:byte(position)
+      local count=(((byte>=129 and byte<=159)or(byte>=224 and byte<=252))
+        and position<#raw)and 2 or 1
+      local unit=raw:sub(position,position+count-1)
+      local text=cache[unit]
+      if text==nil then
+        local ok,decoded=pcall(decode,unit)
+        local same,encoded=false,nil
+        if ok then same,encoded=pcall(encode,decoded)end
+        if same and encoded==unit then text=decoded
+        else text=native_escape(count==1 and byte or byte*256+unit:byte(2))end
+        cache[unit]=text
+      end
+      out[#out+1]=text;position=position+count
+    end
+    return table.concat(out)
+  end
+end
+local crc_table,nibble_xor
+local function xor32(a,b)
+  local out,power=0,1
+  while a>0 or b>0 do
+    out=out+nibble_xor[a%16][b%16]*power
+    a,b,power=math.floor(a/16),math.floor(b/16),power*16
+  end
+  return out
+end
+local function prepare_crc()
+  if crc_table then return end
+  nibble_xor={}
+  for a=0,15 do
+    local row={};nibble_xor[a]=row
+    for b=0,15 do
+      local x,y,out,power=a,b,0,1
+      for _=1,4 do
+        if x%2~=y%2 then out=out+power end
+        x,y,power=math.floor(x/2),math.floor(y/2),power*2
+      end
+      row[b]=out
+    end
+  end
+  crc_table={}
+  for index=0,255 do
+    local value=index
+    for _=1,8 do
+      value=value%2==1 and xor32(math.floor(value/2),0xedb88320)or math.floor(value/2)
+    end
+    crc_table[index]=value
+  end
+end
+local fullwidth_lower={}
+for i=0,25 do
+  local byte=0xa1+i
+  fullwidth_lower[string.char(0xef,0xbc,byte)]=string.char(0xef,0xbd,0x81+i)
+end
+function M.resource_key(text)
+  -- Match the catalogue/model's case handling without width conversion.
+  -- The shipped CG script spells ＣＧモード数字 with uppercase fullwidth
+  -- letters, while the actual archive/catalogue name uses lowercase.
+  return (text:lower():gsub('[\239][\188][\161-\186]',fullwidth_lower):gsub('\\','/'))
+end
+local function characters(text)
+  local out={}
+  for char in cstring(text):gmatch('[\1-\127\194-\244][\128-\191]*')do out[#out+1]=char end
+  return out
+end
+local multibyte_lower={}
+local multibyte_upper={}
+do
+  local upper=characters('ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ')
+  local lower=characters('αβγδεζηθικλμνξοπρστυφχψωабвгдеёжзийклмнопрстуфхцчшщъыьэюя')
+  for i,value in ipairs(upper)do
+    multibyte_lower[value]=lower[i];multibyte_upper[lower[i]]=value
+  end
+end
+function M.install(define,state,options)
+  if options.cp932 then options.cp932=M.native_encoder(options.cp932)end
+  local hash_cache,hash_count={},0
+  local function crc(text)
+    text=cstring(text)
+    local bytes=options.cp932 and options.cp932(text)or text
+    -- Cache the encoded bytes, so a mode/tunnel encoder change cannot reuse
+    -- a hash of different source data. Always run the strict encoder first.
+    local cached=hash_cache[bytes]
+    if cached~=nil then return cached end
+    prepare_crc()
+    local value=0xffffffff
+    for i=1,#bytes do
+      value=xor32(math.floor(value/256),crc_table[xor32(value%256,bytes:byte(i))])
+    end
+    value=0xffffffff-value
+    if #bytes<=256 then
+      if hash_count>=256 then hash_cache={};hash_count=0 end
+      hash_cache[bytes]=value;hash_count=hash_count+1
+    end
+    return value
+  end
+  local function fold(text)
+    text=cstring(text):lower():gsub('[\239][\188][\161-\186]',fullwidth_lower)
+    if options.string_case=='cp932' then
+      text=text:gsub('[%z\1-\127\194-\244][\128-\191]*',multibyte_lower)
+    end
+    return text
+  end
+  local function uppercase(text)
+    text=cstring(text):upper():gsub('[\239][\189][\129-\154]',function(char)
+      return string.char(0xef,0xbc,char:byte(3)+0x20)
+    end)
+    if options.string_case=='cp932'then
+      text=text:gsub('[%z\1-\127\194-\244][\128-\191]*',multibyte_upper)
+    end
+    return text
+  end
+  local function byte_characters(text)
+    local out,index={},1
+    while index<=#text do
+      local value=text:byte(index)
+      if(value>=0x81 and value<=0x9f)or(value>=0xe0 and value<=0xfc)then
+        value=value*256+(text:byte(index+1)or 0);index=index+1
+      end
+      out[#out+1]=value;index=index+1
+    end
+    return out
+  end
+  local function compare(a,b,sensitive)
+    a,b=a:match('^[^%z]*'),b:match('^[^%z]*')
+    if not sensitive then a,b=fold(a),fold(b)end
+    if a==b then return 0 end
+    if options.cp932 then
+      local left_ok,left=pcall(options.cp932,a)
+      local right_ok,right=pcall(options.cp932,b)
+      if not left_ok or not right_ok then
+        -- Display translations can contain Unicode absent from CP932.
+        -- Preserve distinct strings and their deterministic UTF-8 ordering;
+        -- replacing with '?' would make unrelated translated lines equal.
+        -- Resource names and hashes continue through the strict encoder.
+        return a<b and -1 or 1
+      end
+      a,b=left,right
+    end
+    if options.string_case=='cp932'and options.cp932 then
+      -- The older CRT compares multibyte character codes. The later
+      -- engine helper compares the byte sequence, which orders halfwidth
+      -- kana differently relative to a two-byte Japanese character.
+      a,b=byte_characters(a),byte_characters(b)
+      for i=1,math.max(#a,#b)do
+        local left,right=a[i]or 0,b[i]or 0
+        if left~=right then return left<right and -1 or 1 end
+      end
+      return 0
+    end
+    return a==b and 0 or (a<b and -1 or 1)
+  end
+  local function slice(text,start,count)
+    local chars=characters(text)
+    start=math.max(0,start)
+    local out={}
+    for i=start+1,math.min(#chars,start+math.max(0,count))do out[#out+1]=chars[i]end
+    return table.concat(out)
+  end
+  define('$strlen',function(vm,args)assert(#args==1);return #characters(args[1])end)
+  define('$strleft$',function(vm,args)
+    assert(#args==2);if args[2]<0 then return cstring(args[1]) end
+    return slice(args[1],0,args[2])
+  end)
+  define('$strright$',function(vm,args)
+    assert(#args==2);if args[2]<0 then return cstring(args[1])end
+    local chars=characters(args[1]);return slice(args[1],math.max(0,#chars-args[2]),args[2])
+  end)
+  define('$strmid$',function(vm,args)
+    assert(#args==3);if args[2]<0 then return ''end
+    return slice(args[1],args[2],args[3]<0 and #characters(args[1])or args[3])
+  end)
+  define('$strstr',function(vm,args)
+    assert(#args==2)
+    if options.empty_search_absent and cstring(args[1])==''then return -1 end
+    local left,right=cstring(args[1]),cstring(args[2])
+    if not options.string_search_case_sensitive then left,right=fold(left),fold(right)end
+    local found=left:find(right,1,true)
+    return found and #characters(args[1]:sub(1,found-1)) or -1
+  end)
+  -- The syscall wrappers compare argument two to argument one. Bytecode
+  -- string operators use the ordinary left/right ordering.
+  define('$strcmp',function(vm,args)assert(#args==2);return compare(args[2],args[1],true)end)
+  define('$stricmp',function(vm,args)assert(#args==2);return compare(args[2],args[1])end)
+  define('$strupr$',function(vm,args)assert(#args==1);return uppercase(args[1])end)
+  define('$strlwr$',function(vm,args)assert(#args==1);return fold(args[1])end)
+  local function split(text)
+    text=cstring(text)
+    local result={}
+    for value in (text..','):gmatch('(.-),')do
+      -- Original 0x430AA8 strips bytes <= 0x20 from each comma field,
+      -- then removes paired quotes. CGMODE.CFG uses spaces after commas.
+      value=value:gsub('^[%z\1-\32]+',''):gsub('[%z\1-\32]+$','')
+      if #value>=2 and value:sub(1,1)=='"'and value:sub(-1)=='"'then value=value:sub(2,-2)end
+      result[#result+1]=value
+    end
+    return result
+  end
+  define('$num_strsplit',function(vm,args)assert(#args==1);return #split(args[1])end)
+  define('$strsplit$',function(vm,args)
+    assert(#args==2);return split(args[1])[args[2]+1] or ''
+  end)
+  define('$atoi',function(vm,args)
+    assert(#args==1);local part=args[1]:match('^%s*([%+%-]?%d+)')
+    if not part then return 0 end
+    local negative=part:sub(1,1)=='-'
+    local result=0;local limit=negative and 2147483648 or 2147483647
+    for digit in part:gmatch('%d')do
+      result=result*10+tonumber(digit)
+      if options.integer_parse=='wrap32' then result=result%4294967296
+      elseif result>limit then result=limit;break end
+    end
+    if negative then result=-result end
+    return ((result+2147483648)%4294967296)-2147483648
+  end)
+  -- This public helper folds before hashing; event/function hashes do not.
+  define('$crc32str',function(vm,args)
+    assert(#args==1)
+    return(crc(fold(args[1]))+2147483648)%4294967296-2147483648
+  end)
+  local function variable(vm,name)
+    if not name:find('@',2,true)then name=name..'@GLOBAL'end
+    local scope=({['#']=0,['@']=1,['%']=2})[name:sub(1,1)]
+    if scope==nil then vm:fail('dynamic variable scope unsupported: '..name)end
+    return vm.globals[scope],crc(name)
+  end
+  define('$get_variable',function(vm,args)
+    assert(#args==1);local bank,key=variable(vm,args[1]);return bank[key]or 0
+  end)
+  define('$get_variable_nowarn',function(vm,args)
+    assert(#args==1);local bank,key=variable(vm,args[1]);return bank[key]or 0
+  end)
+  local function string_variable(vm,args,warn)
+    assert(#args==1 and type(args[1])=='string','string variable name required')
+    local bank,key=variable(vm,args[1]);local value=bank[key]
+    if value==nil then
+      if warn then
+        state.missing_variables=state.missing_variables or{}
+        state.missing_variables[args[1]]=(state.missing_variables[args[1]]or 0)+1
+      end
+      return''
+    end
+    if type(value)~='string'then vm:fail('dynamic variable is not a string: '..args[1])end
+    return value
+  end
+  define('$get_variable$',function(vm,args)return string_variable(vm,args,true)end)
+  define('$get_variable_nowarn$',function(vm,args)return string_variable(vm,args,false)end)
+  define('$set_variable',function(vm,args)
+    assert(#args==2);local bank,key=variable(vm,args[1]);bank[key]=args[2]
+    if args[1]:sub(1,1)=='#'then state.persist_dirty=true end
+    return 0
+  end)
+  define('$itoa$',function(vm,args)assert(#args==1);return string.format('%.0f',args[1])end)
+  define('$chr$',function(vm,args)
+    local pieces={}
+    for index,value in ipairs(args)do
+      assert(type(value)=='number'and value%1==0,'chr$ requires integers')
+      value=value%4294967296
+      local bytes={}
+      for at=1,4 do
+        local byte=value%256
+        if byte==0 then break end
+        bytes[#bytes+1]=string.char(byte);value=math.floor(value/256)
+      end
+      pieces[index]=table.concat(bytes)
+    end
+    local raw=cstring(table.concat(pieces))
+    assert(#raw<2048,'chr$ exceeds original string buffer')
+    if options.decode_bytes then return options.decode_bytes(raw)end
+    if raw:find('[\128-\255]')then vm:fail('CP932 byte decoder unavailable for chr$')end
+    return raw
+  end)
+  define('$strmatch',function(vm,args)
+    assert(#args==2)
+    -- Original 0x43085F compares CP932 bytes symmetrically. Either operand
+    -- can contain ?, and * accepts the remaining suffix immediately.
+    -- This is not a glob: the pattern suffix following * is never checked.
+    local a,b=fold(args[1]),fold(args[2])
+    if options.cp932 then a,b=options.cp932(a),options.cp932(b)end
+    for i=1,math.max(#a,#b)+1 do
+      local left,right=a:byte(i)or 0,b:byte(i)or 0
+      if left==42 or right==42 then return -1 end
+      if left==0 or right==0 then return left==right and -1 or 0 end
+      if left~=63 and right~=63 and left~=right then return 0 end
+    end
+    return -1
+  end)
+  return {characters=characters,compare=compare,slice=slice,hash=crc,fold=fold,uppercase=uppercase}
+end
+return M

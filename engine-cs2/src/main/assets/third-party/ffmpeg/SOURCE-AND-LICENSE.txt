@@ -1,0 +1,8 @@
+FFmpeg 8.0.2, original unmodified source from https://ffmpeg.org/releases/ffmpeg-8.0.2.tar.xz
+SHA256 5d16962332603c427b3d0887fc12b9166d6ee2cb1108b1865dd2d5eb06a09505
+FFmpeg is separately licensed LGPL-2.1-or-later in this non-GPL/nonfree-disabled shared build.
+The independent cs2_media.c/.h bridge is MIT. No FFmpeg implementation is copied into it.
+Distribute the exact source archive, configuration plan, notices and relinking instructions with releases.
+Keep FFmpeg dynamically replaceable; do not remove user rights to debug/relink their modified libraries.
+No FFmpeg shared libraries or APK have been compiled by this preparation step.
+Recipe stage: integration; this plan is not implementation-completion evidence.
