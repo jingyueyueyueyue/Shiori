@@ -13,7 +13,6 @@ import androidx.activity.viewModels
 import org.galplayer.launcher.model.GameEntry
 import org.galplayer.launcher.model.ScanMode
 import org.galplayer.launcher.ui.LauncherApp
-import org.galplayer.launcher.ui.LauncherTheme
 
 class LauncherActivity : ComponentActivity() {
     private val viewModel: LauncherViewModel by viewModels()

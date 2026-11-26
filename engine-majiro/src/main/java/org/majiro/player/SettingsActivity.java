@@ -49,7 +49,7 @@ public final class SettingsActivity extends Activity {
         scrollView.setBackgroundColor(this.colors.background);
         scrollView.setClipToPadding(false);
         this.page = new LinearLayout(this);
-        this.page.setOrientation(1);
+        this.page.setOrientation(LinearLayout.VERTICAL);
         this.page.setPadding(Ui.dp(this, 20.0f), Ui.dp(this, 12.0f), Ui.dp(this, 20.0f), Ui.dp(this, 32.0f));
         scrollView.addView(this.page, new FrameLayout.LayoutParams(-1, -2));
         scrollView.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() { // from class: org.majiro.player.SettingsActivity$$ExternalSyntheticLambda4
@@ -163,7 +163,7 @@ public final class SettingsActivity extends Activity {
 
     private LinearLayout card() {
         LinearLayout linearLayout = new LinearLayout(this);
-        linearLayout.setOrientation(1);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
         linearLayout.setBackground(Ui.outlined(this, this.colors, this.colors.surface, 20.0f));
         return linearLayout;
     }
@@ -177,7 +177,7 @@ public final class SettingsActivity extends Activity {
         linearLayout2.setFocusable(true);
         linearLayout2.setOnClickListener(onClickListener);
         LinearLayout linearLayout3 = new LinearLayout(this);
-        linearLayout3.setOrientation(1);
+        linearLayout3.setOrientation(LinearLayout.VERTICAL);
         linearLayout3.addView(Ui.text(this, str, 16.0f, this.colors.ink, true));
         TextView textViewText = Ui.text(this, str2, 13.0f, this.colors.muted, false);
         textViewText.setMaxLines(2);
@@ -311,7 +311,7 @@ public final class SettingsActivity extends Activity {
 
     /* JADX INFO: renamed from: lambda$exportLogs$8$org-majiro-player-SettingsActivity, reason: not valid java name */
     /* synthetic */ void m42lambda$exportLogs$8$orgmajiroplayerSettingsActivity() {
-        Toast.makeText(this, "日志已导出", 0).show();
+        Toast.makeText(this, "日志已导出", Toast.LENGTH_SHORT).show();
     }
 
     private void showError(final String str, final String str2) {

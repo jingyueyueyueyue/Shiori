@@ -72,8 +72,9 @@ fun GameArtwork(
     val cover = rememberArtwork(game.coverPath)
     val icon = rememberArtwork(game.iconPath, 512)
     val protected = adultProtection && game.coverSensitive
+    val colors = MaterialTheme.colorScheme
     val placeholderBrush = Brush.linearGradient(
-        listOf(Color(0xFF6E8DD0), Color(0xFF8C79B6), Color(0xFF6CA795)),
+        listOf(colors.primary.copy(alpha = 0.78f), colors.secondary, colors.tertiary),
     )
     Box(modifier.clip(RoundedCornerShape(12.dp)).background(placeholderBrush)) {
         when {
@@ -88,7 +89,7 @@ fun GameArtwork(
             icon != null -> {
                 Box(
                     Modifier.fillMaxSize().background(
-                        Brush.radialGradient(listOf(Color(0xFF8EA7D8), Color(0xFF7B79A9))),
+                        Brush.radialGradient(listOf(colors.primary.copy(alpha = 0.72f), colors.secondary)),
                     ),
                     contentAlignment = Alignment.Center,
                 ) {

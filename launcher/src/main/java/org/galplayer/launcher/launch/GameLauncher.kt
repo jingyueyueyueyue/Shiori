@@ -59,6 +59,7 @@ class GameLauncher(private val context: Context, private val store: LauncherStor
             putExtra("override_text_mode", if (textMode == TextMode.FOLLOW_GLOBAL) TextMode.AUTO.id else textMode.id)
             putExtra("override_touch_keys", game.settings.touchKeys ?: settings.touchKeys)
             putExtra("override_font_quality", if (game.settings.highQualityFont ?: settings.highQualityFont) 1 else 0)
+            putExtra(PlayerEngineActivity.EXTRA_HUD_ENABLED, game.settings.hudEnabled ?: settings.performanceHud)
             data = Uri.parse(game.treeUri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             if (isolated) {
@@ -82,7 +83,7 @@ class GameLauncher(private val context: Context, private val store: LauncherStor
             putExtra(PlayerEngineActivity.EXTRA_GAME_TITLE, game.displayTitle)
             putExtra(PlayerEngineActivity.EXTRA_LANGUAGE, language)
             putExtra(PlayerEngineActivity.EXTRA_ISOLATED, isolated)
-            putExtra(PlayerEngineActivity.EXTRA_HUD_ENABLED, game.settings.hudEnabled ?: settings.cs2Hud)
+            putExtra(PlayerEngineActivity.EXTRA_HUD_ENABLED, game.settings.hudEnabled ?: settings.performanceHud)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }

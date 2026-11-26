@@ -75,7 +75,7 @@ final class Ui {
         textView.setFontFeatureSettings("kern");
         textView.setLineSpacing(0.0f, 1.08f);
         if (z) {
-            textView.setTypeface(Typeface.create("sans-serif-medium", 0));
+            textView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         }
         return textView;
     }

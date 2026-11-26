@@ -1,5 +1,20 @@
 package org.catsystem2.player
 
+import org.galplayer.performance.FrameRateSampler
+import org.galplayer.performance.GpuUsage
+import org.galplayer.performance.SystemPerformanceSnapshot
+
+internal data class PerformanceSnapshot(
+    val game: GamePerformance = GamePerformance(),
+    val system: SystemPerformanceSnapshot = SystemPerformanceSnapshot(),
+) {
+    val gpu: GpuUsage get() = system.gpu
+    val cpuPercent: Float? get() = system.cpuPercent
+    val ramPercent: Float? get() = system.ramPercent
+    val powerWatts: Float? get() = system.powerWatts
+    val externalPower: Boolean get() = system.externalPower
+}
+
 internal enum class DisplaySource {
     NONE, SOFTWARE, EGL_UNSUPPORTED, EGL_PENDING, EGL_TIMESTAMP,
     VULKAN_UNSUPPORTED, VULKAN_PENDING, VULKAN_TIMESTAMP,

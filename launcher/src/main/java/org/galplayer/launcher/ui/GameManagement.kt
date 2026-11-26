@@ -129,9 +129,8 @@ private fun GameManagementContent(
             Choice(false, "标准"),
             Choice(true, "高清"),
         ), { fontQuality = it })
-    } else {
-        ChoiceRow("性能监控浮窗", hud, triStateChoices, { hud = it })
     }
+    ChoiceRow("性能监控浮窗", hud, triStateChoices, { hud = it }, "两个引擎共用全局默认，也可在此单独覆盖")
     if (BuildConfig.DEBUG || snapshot.settings.advanced) {
         SettingSwitchRow("隔离存档测试启动", isolated, { isolated = it }, "使用独立临时存档，不读取正式存档")
     }

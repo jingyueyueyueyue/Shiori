@@ -44,10 +44,10 @@ public final class RenderInstrumentation extends Instrumentation {
             String[] samples={"中文顶端完整，保持笔画。","「日本語の高い文字」",
                               "ÉÅgjpq国高雪冒瞥","“翻译后的对白”：测试"};
             int clippedLegacy=0;
-            for(String family:new String[]{"sans-serif","serif","MS PGothic"})
-            for(int style:new int[]{Typeface.NORMAL,Typeface.BOLD})
-            for(int height:new int[]{16,20,24,30,36})
-            for(int quality:new int[]{1,4})
+            for(String family:new String[]{"sans-serif","serif","MS PGothic"}) {
+            for(int style:new int[]{Typeface.NORMAL,Typeface.BOLD}) {
+            for(int height:new int[]{16,20,24,30,36}) {
+            for(int quality:new int[]{1,4}) {
             for(String text:samples){
                 Typeface base=OriginalTypefaces.resolve(context,family);
                 Typeface typeface=base==null?Typeface.create(family,style):Typeface.create(base,style);
@@ -110,6 +110,10 @@ public final class RenderInstrumentation extends Instrumentation {
                     image(new File(folder,"glyph-padded-old.png"),legacy);
                 }
                 padded.recycle();legacy.recycle();
+            }
+            }
+            }
+            }
             }
             result.putString("stream","Glyph cells: "+cases.length()+" passed; legacy clipping reproduced in "+clippedLegacy+" cases.\n");
             result.putInt("checks",cases.length());result.putInt("legacy_clipped_cases",clippedLegacy);

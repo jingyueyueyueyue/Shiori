@@ -32,6 +32,7 @@ public final class GameActivity extends SDLActivity {
         @Override public void onInputDeviceChanged(int device){releaseKeyboardDevice(device);}
         @Override public void onInputDeviceRemoved(int device){releaseKeyboardDevice(device);}
     };
+    @android.annotation.TargetApi(Build.VERSION_CODES.TIRAMISU)
     private static final class PredictiveBack {
         static Object register(GameActivity owner){
             android.window.OnBackInvokedCallback callback=owner::requestGameBack;
@@ -207,6 +208,7 @@ public final class GameActivity extends SDLActivity {
     @Override protected void onPause() {
         keyboardPaused=true;
         releaseGameKeys();
+        if(settingsOverlay!=null)settingsOverlay.pausePerformanceMonitor();
         GameBridge.pause();
         super.onPause();
     }
@@ -223,6 +225,7 @@ public final class GameActivity extends SDLActivity {
     @Override protected void onResume() {
         super.onResume();
         keyboardPaused=false;
+        if(settingsOverlay!=null)settingsOverlay.resumePerformanceMonitor();
         GameBridge.resume();
     }
     @Override protected void onDestroy() {

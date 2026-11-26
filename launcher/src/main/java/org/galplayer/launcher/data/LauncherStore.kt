@@ -14,6 +14,7 @@ import org.galplayer.launcher.model.PerGameSettings
 import org.galplayer.launcher.model.ScanRoot
 import org.galplayer.launcher.model.TextMode
 import org.galplayer.launcher.model.ThemeMode
+import org.galplayer.launcher.model.ThemePalette
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -146,6 +147,7 @@ class LauncherStore(context: Context) {
         val item = runCatching { JSONObject(preferences.getString(KEY_SETTINGS, "{}") ?: "{}") }.getOrElse { JSONObject() }
         return GlobalSettings(
             themeMode = enumValue(item.optString("themeMode"), ThemeMode.SYSTEM),
+            themePalette = enumValue(item.optString("themePalette"), ThemePalette.CLASSIC_BLUE),
             posterMode = item.optBoolean("posterMode", true),
             showRecent = item.optBoolean("showRecent", true),
             alwaysBottomNavigation = item.optBoolean("alwaysBottomNavigation"),
@@ -155,7 +157,7 @@ class LauncherStore(context: Context) {
             textMode = enumValue(item.optString("textMode"), TextMode.AUTO),
             touchKeys = item.optBoolean("touchKeys"),
             highQualityFont = item.optBoolean("highQualityFont"),
-            cs2Hud = item.optBoolean("cs2Hud"),
+            performanceHud = item.optBoolean("performanceHud", item.optBoolean("cs2Hud")),
             advanced = item.optBoolean("advanced"),
         )
     }
@@ -192,6 +194,7 @@ class LauncherStore(context: Context) {
 
     private fun GlobalSettings.toJson() = JSONObject()
         .put("themeMode", themeMode.id)
+        .put("themePalette", themePalette.id)
         .put("posterMode", posterMode)
         .put("showRecent", showRecent)
         .put("alwaysBottomNavigation", alwaysBottomNavigation)
@@ -201,7 +204,7 @@ class LauncherStore(context: Context) {
         .put("textMode", textMode.id)
         .put("touchKeys", touchKeys)
         .put("highQualityFont", highQualityFont)
-        .put("cs2Hud", cs2Hud)
+        .put("performanceHud", performanceHud)
         .put("advanced", advanced)
 
     private fun JSONObject.putOptionalBoolean(name: String, value: Boolean?): JSONObject =
@@ -216,7 +219,8 @@ class LauncherStore(context: Context) {
     private inline fun <reified T : Enum<T>> enumValue(value: String, fallback: T): T =
         enumValues<T>().firstOrNull { it.name == value || (it is EngineType && it.id == value) ||
             (it is TextMode && it.id == value) || (it is ThemeMode && it.id == value) ||
-            (it is CoverPriority && it.id == value) || (it is CoverOrigin && it.id == value) } ?: fallback
+            (it is ThemePalette && it.id == value) || (it is CoverPriority && it.id == value) ||
+            (it is CoverOrigin && it.id == value) } ?: fallback
 
     private companion object {
         const val PREF_NAME = "unified-launcher"

@@ -71,7 +71,7 @@ fun LauncherApp(
         }
     }
 
-    LauncherTheme(snapshot.settings.themeMode) {
+    LauncherTheme(snapshot.settings.themeMode, snapshot.settings.themePalette) {
         AmbientBackground {
             Row(Modifier.fillMaxSize()) {
                 if (rail) {

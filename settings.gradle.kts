@@ -16,5 +16,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "Shiori"
 include(":launcher")
+include(":engine-performance")
 include(":engine-majiro")
 include(":engine-cs2")

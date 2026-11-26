@@ -35,6 +35,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.galplayer.performance.SystemPerformanceSampler
 
 class PlayerActivity : PlayerEngineActivity() {
     private val preferences by lazy { getSharedPreferences("performance_overlay", MODE_PRIVATE) }
@@ -135,12 +136,12 @@ class PlayerActivity : PlayerEngineActivity() {
                 try {
                     sampleGameRates()
                     pollEngineSample()
-                    val sampler = withContext(Dispatchers.IO) { GamePerformanceSampler(applicationContext) }
+                    val sampler = withContext(Dispatchers.IO) { SystemPerformanceSampler(applicationContext) }
                     while (isActive) {
                         delay(1_000)
                         val metrics = withContext(Dispatchers.IO) { sampler.sample() }
                         pollEngineSample()
-                        snapshot = metrics.copy(game = sampleGameRates())
+                        snapshot = PerformanceSnapshot(system = metrics, game = sampleGameRates())
                         logSample(snapshot)
                     }
                 } finally {

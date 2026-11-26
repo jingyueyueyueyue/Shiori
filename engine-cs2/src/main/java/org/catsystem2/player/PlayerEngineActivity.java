@@ -514,7 +514,7 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
         int access = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
         if (access != 0) {
             try {
-                getContentResolver().takePersistableUriPermission(tree, access);
+                getContentResolver().takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION);
             } catch (SecurityException ignored) {
                 // The picker may have granted read access for this session only.
             }
@@ -2534,6 +2534,7 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
         if (gameKeyboardSession != 0) endGameKeyboard(true);
         else if (playbackControls != null) hidePlaybackControls();
         else if (inputSession() != 0) showPlaybackControls();
+        else super.onBackPressed();
     }
 
     private void showPlaybackControls() {

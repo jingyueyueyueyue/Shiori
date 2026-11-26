@@ -69,6 +69,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private var coverBatchJob: Job? = null
     private val coverWriteLocks = ConcurrentHashMap<String, Any>()
 
+    private enum class CoverFetchOutcome { SAVED, NO_MATCH, FAILED, UNCHANGED }
+
     val snapshot: StateFlow<LibrarySnapshot> = combine(
         store.games, store.roots, store.settings, operation,
     ) { games, roots, settings, state ->
@@ -149,11 +151,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     }
                 }
                 store.markUnavailableExcept(roots.map { it.uri }.toSet(), foundIds)
-                if (refreshAutomaticCovers && store.settings.value.autoCover) {
-                    store.games.value.filter { it.coverOrigin == CoverOrigin.AUTOMATIC }.forEach { fetchAutomatic(it) }
+                val coverOutcomes = if (refreshAutomaticCovers && store.settings.value.autoCover) {
+                    automaticCoverTargets().map { fetchAutomatic(it) }
+                } else {
+                    emptyList()
                 }
                 setOperation {
-                    it.copy(message = "刷新完成，新增 $added 个；$unreadable 个目录不可读，$failed 个根目录扫描失败")
+                    it.copy(message = "刷新完成，新增 $added 个；$unreadable 个目录不可读，$failed 个根目录扫描失败" +
+                        coverOutcomeSummary(coverOutcomes))
                 }
             } finally {
                 setOperation { it.copy(scanning = false) }
@@ -315,20 +320,22 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun fetchMissingCovers() {
+    fun refreshCovers() {
         if (coverBatchJob?.isActive == true) return
-        val targets = store.games.value.filter { it.coverPath == null && it.coverOrigin != CoverOrigin.MANUAL }
+        val targets = automaticCoverTargets()
         if (targets.isEmpty()) {
-            setOperation { it.copy(message = "没有缺少封面的游戏") }
+            setOperation { it.copy(message = "没有需要在线更新的封面，本地与手动封面保持不变") }
             return
         }
         coverBatchJob = viewModelScope.launch(Dispatchers.IO) {
-            setOperation { it.copy(coverBatchRunning = true, coverBatchProgress = 0 to targets.size) }
+            setOperation { it.copy(coverBatchRunning = true, coverBatchProgress = 0 to targets.size, message = null) }
             try {
-                targets.forEachIndexed { index, game ->
-                    fetchAutomatic(game)
+                val outcomes = targets.mapIndexed { index, game ->
+                    val outcome = fetchAutomatic(game)
                     setOperation { it.copy(coverBatchProgress = index + 1 to targets.size) }
+                    outcome
                 }
+                setOperation { it.copy(message = "封面处理完成" + coverOutcomeSummary(outcomes)) }
             } finally {
                 setOperation { it.copy(coverBatchRunning = false, coverBatchProgress = null) }
             }
@@ -446,17 +453,26 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         added
     }
 
-    private suspend fun fetchAutomatic(game: GameEntry) {
+    private fun automaticCoverTargets(): List<GameEntry> = store.games.value.filter {
+        it.coverOrigin != CoverOrigin.MANUAL && (it.coverPath == null || it.coverOrigin == CoverOrigin.AUTOMATIC)
+    }
+
+    private suspend fun fetchAutomatic(game: GameEntry): CoverFetchOutcome {
         try {
             val settings = store.settings.value
             val productId = TitleNormalizer.productId(game.documentId)
-            val query = listOfNotNull(game.displayTitle, productId).joinToString(" ")
-            val candidate = covers.bestAutomatic(query, settings.coverPriority, settings.adultProtection) ?: return
+            val titles = listOf(game.displayTitle, game.title).map { it.trim() }.filter { it.isNotBlank() }.distinct()
+            val queries = (titles.map { title -> listOfNotNull(title, productId).joinToString(" ") } + listOfNotNull(productId))
+                .filter { it.isNotBlank() }.distinct()
+            val candidate = queries.firstNotNullOfOrNull { query ->
+                covers.bestAutomatic(query, settings.coverPriority, settings.adultProtection)
+            } ?: return CoverFetchOutcome.NO_MATCH
             val bytes = covers.download(candidate.url)
+            var saved = false
             coverWrite(game.id) {
                 val current = store.games.value.firstOrNull { it.id == game.id } ?: return@coverWrite
                 if (current.coverOrigin == CoverOrigin.MANUAL || current.coverPath != game.coverPath) return@coverWrite
-                val path = artwork.saveCover(game.id, bytes) ?: return@coverWrite
+                val path = artwork.saveCover(game.id, bytes) ?: throw IllegalStateException("图片解码或保存失败")
                 store.updateGame(game.id) {
                     if (it.coverOrigin == CoverOrigin.MANUAL || it.coverPath != game.coverPath) {
                         it
@@ -464,11 +480,26 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                         it.copy(coverPath = path, coverSensitive = candidate.sensitive, coverOrigin = CoverOrigin.AUTOMATIC)
                     }
                 }
+                saved = true
             }
+            return if (saved) CoverFetchOutcome.SAVED else CoverFetchOutcome.UNCHANGED
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
-            return
+            return CoverFetchOutcome.FAILED
+        }
+    }
+
+    private fun coverOutcomeSummary(outcomes: List<CoverFetchOutcome>): String {
+        if (outcomes.isEmpty()) return ""
+        val saved = outcomes.count { it == CoverFetchOutcome.SAVED }
+        val unmatched = outcomes.count { it == CoverFetchOutcome.NO_MATCH }
+        val failed = outcomes.count { it == CoverFetchOutcome.FAILED }
+        return buildString {
+            append("；更新 $saved 张封面")
+            if (unmatched > 0) append("，$unmatched 个未可靠匹配")
+            if (failed > 0) append("，$failed 个下载或连接失败")
+            if (saved == 0 && unmatched == 0 && failed == 0) append("，现有封面未改动")
         }
     }
 

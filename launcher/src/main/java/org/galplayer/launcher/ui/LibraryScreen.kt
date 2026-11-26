@@ -113,8 +113,8 @@ fun LibraryScreen(
                     })
                 }
             }
-            IconButton(onClick = { if (snapshot.coverBatchRunning) viewModel.cancelCoverBatch() else viewModel.fetchMissingCovers() }) {
-                Icon(if (snapshot.coverBatchRunning) Icons.Rounded.Close else Icons.Rounded.CloudDownload, "批量获取封面或取消")
+            IconButton(onClick = { if (snapshot.coverBatchRunning) viewModel.cancelCoverBatch() else viewModel.refreshCovers() }) {
+                Icon(if (snapshot.coverBatchRunning) Icons.Rounded.Close else Icons.Rounded.CloudDownload, "获取或重新匹配封面，取消批量任务")
             }
             if (snapshot.scanning) {
                 CircularProgressIndicator(Modifier.size(34.dp).padding(7.dp), strokeWidth = 2.dp)

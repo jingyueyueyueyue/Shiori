@@ -19,6 +19,28 @@ enum class ThemeMode(val id: String, val label: String) {
     DARK("dark", "深色"),
 }
 
+enum class ThemePalette(
+    val id: String,
+    val label: String,
+    val lightPrimary: Long,
+    val darkPrimary: Long,
+    val secondary: Long,
+    val tertiary: Long,
+) {
+    CLASSIC_BLUE("classic_blue", "经典蓝", 0xFF2589FF, 0xFF8AC7FF, 0xFF8872D9, 0xFF4DAE9A),
+    INDIGO("indigo", "靛青", 0xFF4A56A6, 0xFFB4BCFF, 0xFF8B79C9, 0xFF4D9FAE),
+    PURPLE("purple", "紫罗兰", 0xFF7351A6, 0xFFD2B4FF, 0xFF4D8FC4, 0xFFB879A9),
+    SAKURA("sakura", "樱花粉", 0xFFAD345F, 0xFFFFB1C8, 0xFF8B6FB2, 0xFF4E9B93),
+    ROSE("rose", "玫瑰红", 0xFFB93A48, 0xFFFFB3BA, 0xFF8C6E9F, 0xFFB48A52),
+    ORANGE("orange", "落日橙", 0xFFB54B22, 0xFFFFB59A, 0xFF527FA5, 0xFF7D9A52),
+    AMBER("amber", "琥珀金", 0xFF8A6200, 0xFFFFD58A, 0xFF5D8BA0, 0xFF9A7A52),
+    GREEN("green", "森林绿", 0xFF2E7D32, 0xFFA8DAB0, 0xFF567FAF, 0xFF9B8750),
+    TEAL("teal", "青瓷绿", 0xFF00796B, 0xFF8FD8CC, 0xFF6D83B5, 0xFF9A7BAA),
+    CYAN("cyan", "晴空青", 0xFF007C91, 0xFF91DDEA, 0xFF777FC0, 0xFF4D9B7B),
+    SLATE("slate", "石墨灰", 0xFF485563, 0xFFC2CBD6, 0xFF71809A, 0xFF8C7C70),
+    MOCHA("mocha", "摩卡棕", 0xFF795548, 0xFFD7BBB0, 0xFF6D8292, 0xFF8A7B9E),
+}
+
 enum class CoverPriority(val id: String, val label: String) {
     BANGUMI("bangumi", "Bangumi 优先"),
     VNDB("vndb", "VNDB 优先"),
@@ -69,6 +91,7 @@ data class ScanRoot(
 
 data class GlobalSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themePalette: ThemePalette = ThemePalette.CLASSIC_BLUE,
     val posterMode: Boolean = true,
     val showRecent: Boolean = true,
     val alwaysBottomNavigation: Boolean = false,
@@ -78,7 +101,7 @@ data class GlobalSettings(
     val textMode: TextMode = TextMode.AUTO,
     val touchKeys: Boolean = false,
     val highQualityFont: Boolean = false,
-    val cs2Hud: Boolean = false,
+    val performanceHud: Boolean = false,
     val advanced: Boolean = false,
 )
 

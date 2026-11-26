@@ -32,6 +32,7 @@ final class GameSettingsOverlay {
     private Dialog drawer;
     private TextView status;
     private LinearLayout touchPanel;
+    private GamePerformanceMonitor performanceMonitor;
     private boolean touchKeysEnabled;
     private final ArrayList<TouchKey> touchKeys=new ArrayList<>();
     private final Runnable update=new Runnable(){
@@ -67,6 +68,7 @@ final class GameSettingsOverlay {
         setTouchKeysVisible(activity.getIntent().hasExtra("override_touch_keys")
             ?activity.getIntent().getBooleanExtra("override_touch_keys",false)
             :preferences.getBoolean("touch-keys",false));
+        performanceMonitor=new GamePerformanceMonitor(activity,layer);
     }
     private final class TouchKey implements View.OnTouchListener,View.OnClickListener {
         final TextView view;
@@ -245,6 +247,9 @@ final class GameSettingsOverlay {
         row(panel,touchKeysEnabled?"隐藏触屏按键":"显示触屏按键（方向／空格／Ctrl）",()->{
             dismiss();setTouchKeysVisible(!touchKeysEnabled);
         });
+        row(panel,performanceMonitor.isEnabled()?"关闭性能监控":"显示性能监控",()->{
+            dismiss();performanceMonitor.toggle();
+        });
         row(panel,"文本与翻译设置",()->TranslationSettingsDialog.show(activity,worker,this::changed));
         row(panel,"开启／关闭在线翻译",()->{
             TranslationSettings saved=TranslationSettings.load(activity);
@@ -284,8 +289,11 @@ final class GameSettingsOverlay {
         drawer.dismiss();return true;
     }
     boolean isShowing(){return drawer!=null;}
+    void pausePerformanceMonitor(){if(performanceMonitor!=null)performanceMonitor.pause();}
+    void resumePerformanceMonitor(){if(performanceMonitor!=null)performanceMonitor.resume();}
     void close(){
         closed=true;releaseTouchKeys();dismiss();worker.shutdownNow();
+        if(performanceMonitor!=null){performanceMonitor.close();performanceMonitor=null;}
         if(layer.getParent()instanceof ViewGroup)((ViewGroup)layer.getParent()).removeView(layer);
     }
 }

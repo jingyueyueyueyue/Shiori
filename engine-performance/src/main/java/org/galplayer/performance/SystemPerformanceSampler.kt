@@ -1,4 +1,4 @@
-package org.catsystem2.player
+package org.galplayer.performance
 
 import android.app.ActivityManager
 import android.content.Context
@@ -9,8 +9,7 @@ import android.os.Process
 import android.os.SystemClock
 import kotlin.math.abs
 
-internal data class PerformanceSnapshot(
-    val game: GamePerformance = GamePerformance(),
+data class SystemPerformanceSnapshot(
     val gpu: GpuUsage = GpuUsage(),
     val cpuPercent: Float? = null,
     val ramPercent: Float? = null,
@@ -18,8 +17,8 @@ internal data class PerformanceSnapshot(
     val externalPower: Boolean = false,
 )
 
-/** Construct and sample on a background dispatcher. */
-internal class GamePerformanceSampler(private val context: Context) {
+/** Construct and sample on the same background thread. */
+class SystemPerformanceSampler(private val context: Context) {
     private val activityManager = context.getSystemService(ActivityManager::class.java)
     private val batteryManager = context.getSystemService(BatteryManager::class.java)
     private val memory = ActivityManager.MemoryInfo()
@@ -28,7 +27,7 @@ internal class GamePerformanceSampler(private val context: Context) {
     private var previousTime = SystemClock.elapsedRealtimeNanos()
     private var previousCpu = Process.getElapsedCpuTime()
 
-    fun sample(): PerformanceSnapshot {
+    fun sample(): SystemPerformanceSnapshot {
         val now = SystemClock.elapsedRealtimeNanos()
         val cpu = Process.getElapsedCpuTime()
         val elapsed = now - previousTime
@@ -46,7 +45,7 @@ internal class GamePerformanceSampler(private val context: Context) {
             } else null
         }.getOrNull()
         val power = readBatteryPower()
-        return PerformanceSnapshot(
+        return SystemPerformanceSnapshot(
             gpu = gpu.read(now),
             cpuPercent = cpuPercent,
             ramPercent = ramPercent,

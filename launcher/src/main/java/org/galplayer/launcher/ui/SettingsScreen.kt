@@ -1,7 +1,10 @@
 package org.galplayer.launcher.ui
 
-import android.content.Context
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,12 +12,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -29,6 +35,8 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +47,7 @@ import org.galplayer.launcher.model.CoverPriority
 import org.galplayer.launcher.model.LibrarySnapshot
 import org.galplayer.launcher.model.TextMode
 import org.galplayer.launcher.model.ThemeMode
+import org.galplayer.launcher.model.ThemePalette
 import org.galplayer.launcher.settings.TranslationSnapshot
 import java.io.File
 
@@ -88,6 +97,32 @@ fun SettingsScreen(
 }
 
 @Composable
+private fun ThemePalettePicker(selected: ThemePalette, onSelect: (ThemePalette) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+        Text("主题配色", style = MaterialTheme.typography.bodyLarge)
+        Spacer(Modifier.height(8.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            ThemePalette.entries.forEach { palette ->
+                FilterChip(
+                    selected = selected == palette,
+                    onClick = { onSelect(palette) },
+                    label = { Text(palette.label) },
+                    leadingIcon = {
+                        Box(
+                            Modifier.size(17.dp).clip(CircleShape).background(Color(palette.lightPrimary))
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), CircleShape),
+                        )
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun SurfaceChoice(label: String, selected: Boolean, onClick: () -> Unit) {
     androidx.compose.material3.Surface(
         onClick = onClick,
@@ -114,6 +149,9 @@ private fun SettingsSection(
             ChoiceRow("主题模式", snapshot.settings.themeMode, ThemeMode.entries.map { Choice(it, it.label) }, { mode ->
                 viewModel.updateSettings { it.copy(themeMode = mode) }
             })
+            ThemePalettePicker(snapshot.settings.themePalette) { palette ->
+                viewModel.updateSettings { it.copy(themePalette = palette) }
+            }
             SettingSwitchRow("精美海报模式", snapshot.settings.posterMode, { enabled ->
                 viewModel.updateSettings { it.copy(posterMode = enabled) }
             }, "关闭后使用紧凑图标卡片")
@@ -146,7 +184,7 @@ private fun SettingsSection(
             })
             SettingSwitchRow("成人／敏感封面保护", snapshot.settings.adultProtection, { enabled ->
                 viewModel.updateSettings { it.copy(adultProtection = enabled) }
-            }, "默认开启；自动匹配跳过敏感候选，手动结果模糊显示")
+            }, "默认开启；自动与手动获取的敏感封面均模糊显示")
             val cacheSize by produceState(0L, snapshot.games) { value = viewModel.artworkCacheSize() }
             Text("本地图片缓存：${"%.1f".format(cacheSize / 1024f / 1024f)} MB")
             var clearConfirm by remember { mutableStateOf(false) }
@@ -185,9 +223,9 @@ private fun SettingsSection(
             val fontInstalled = remember(snapshot.message) { File(context.filesDir, "fonts/msgothic.ttc").isFile }
             Text(if (fontInstalled) "私有字体：已安装" else "私有字体：未安装", style = MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick = onImportFont) { Text("导入私有字体") }
-            SettingSwitchRow("默认显示性能监控", snapshot.settings.cs2Hud, { enabled ->
-                viewModel.updateSettings { it.copy(cs2Hud = enabled) }
-            }, "FPS / GPU / CPU / RAM / PWR（在支持的引擎中生效）")
+            SettingSwitchRow("默认显示性能监控", snapshot.settings.performanceHud, { enabled ->
+                viewModel.updateSettings { it.copy(performanceHud = enabled) }
+            }, "Majiro 与 CatSystem2 共用；显示 FPS / GPU / CPU / RAM / PWR")
             Text(if (viewModel.hasStorageAccess()) "文件访问权限：已授予" else "文件访问权限：未授予")
             OutlinedButton(onClick = onRequestStorageAccess) { Text("检查并授予文件访问") }
         }

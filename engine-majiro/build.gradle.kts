@@ -20,6 +20,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":engine-performance"))
     api(files("libs/SDL3-classes.jar"))
 }
 

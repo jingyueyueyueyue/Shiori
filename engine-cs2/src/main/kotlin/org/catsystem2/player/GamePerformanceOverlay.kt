@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Locale
 import kotlin.math.roundToInt
+import org.galplayer.performance.GpuUsageStatus
 
 private val MetricStyle = TextStyle(
     fontFamily = FontFamily.Monospace,

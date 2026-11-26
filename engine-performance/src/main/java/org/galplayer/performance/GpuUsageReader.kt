@@ -1,14 +1,14 @@
-package org.catsystem2.player
+package org.galplayer.performance
 
 import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
 
-internal enum class GpuUsageStatus {
+enum class GpuUsageStatus {
     AVAILABLE, STALE, NO_WINDOW, DENIED, UNAVAILABLE, INVALID, READ_ERROR,
 }
 
-internal data class GpuUsage(
+data class GpuUsage(
     val status: GpuUsageStatus = GpuUsageStatus.UNAVAILABLE,
     val percent: Float? = null,
     val source: String? = null,
@@ -16,14 +16,14 @@ internal data class GpuUsage(
     val currentIssue: GpuUsageStatus? = null,
 )
 
-internal data class GpuCounter(val path: String, val busyAndTotal: Boolean = false)
+data class GpuCounter(val path: String, val busyAndTotal: Boolean = false)
 
-internal sealed interface GpuCounterResult {
+sealed interface GpuCounterResult {
     data class Read(val text: String) : GpuCounterResult
     data class Failure(val status: GpuUsageStatus) : GpuCounterResult
 }
 
-internal class GpuUsageReader(
+class GpuUsageReader(
     counters: List<GpuCounter> = systemCounters,
     private val readCounter: (String) -> GpuCounterResult = ::readGpuCounter,
 ) {
@@ -110,8 +110,11 @@ internal fun parseGpuCounter(text: String, busyAndTotal: Boolean): GpuUsage {
     return GpuUsage(GpuUsageStatus.INVALID)
 }
 
+// The kernel flag predates the Java constant, which Android exposes from API 27.
+private const val LINUX_O_CLOEXEC = 0x80000
+
 private fun readGpuCounter(path: String): GpuCounterResult = try {
-    val descriptor = Os.open(path, OsConstants.O_RDONLY or OsConstants.O_CLOEXEC, 0)
+    val descriptor = Os.open(path, OsConstants.O_RDONLY or LINUX_O_CLOEXEC, 0)
     try {
         val bytes = ByteArray(128)
         val length = Os.read(descriptor, bytes, 0, bytes.size)

@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
 import android.system.Os;
@@ -121,7 +122,7 @@ public final class GameBridge {
             rootId=documentRoot==null||documentRoot.length()==0?grantedRoot:documentRoot;
             if(!rootId.equals(grantedRoot)) {
                 boolean child=rootId.startsWith(grantedRoot+"/");
-                if(!child)try {
+                if(!child&&Build.VERSION.SDK_INT>=29)try {
                     child=DocumentsContract.isChildDocument(activity.getContentResolver(),
                         DocumentsContract.buildDocumentUriUsingTree(tree,grantedRoot),
                         DocumentsContract.buildDocumentUriUsingTree(tree,rootId));

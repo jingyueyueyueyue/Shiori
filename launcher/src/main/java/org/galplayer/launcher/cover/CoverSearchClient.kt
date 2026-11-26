@@ -52,10 +52,17 @@ class CoverSearchClient {
                 ?: SourceOutcome(emptyList())
         }
         val outcomes = listOf(bangumi.await(), vndb.await(), dlsite.await())
+        val titleAlternatives = TitleNormalizer.alternatives(TitleNormalizer.withoutProductId(query))
+        val productId = TitleNormalizer.productId(query)
         val scored = outcomes.flatMap { it.results }.map { candidate ->
-            candidate.copy(matchScore = TitleNormalizer.alternatives(query).maxOf { alternative ->
-                similarity(TitleNormalizer.normalize(alternative), candidate)
-            })
+            val score = if (candidate.source == CoverSource.DLSITE && productId != null) {
+                1f
+            } else {
+                titleAlternatives.maxOfOrNull { alternative ->
+                    similarity(TitleNormalizer.normalize(alternative), candidate)
+                } ?: 0f
+            }
+            candidate.copy(matchScore = score)
         }.distinctBy { it.url }
         CoverSearchReport(
             results = scored.sortedWith(
@@ -80,12 +87,23 @@ class CoverSearchClient {
         SourceOutcome(emptyList(), "${source.label}：${error.message ?: error.javaClass.simpleName}")
     }
 
-    suspend fun bestAutomatic(query: String, priority: CoverPriority, adultProtection: Boolean): CoverCandidate? =
-        search(query, priority).filter { candidate ->
-            candidate.matchScore >= AUTO_MATCH_THRESHOLD && (!adultProtection || !candidate.sensitive)
-        }.maxByOrNull { candidate ->
-            candidate.matchScore + if (candidate.height > candidate.width && candidate.height > 0) 0.025f else 0f
+    suspend fun bestAutomatic(query: String, priority: CoverPriority, adultProtection: Boolean): CoverCandidate? {
+        val report = searchDetailed(query, priority)
+        if (report.results.isEmpty() && report.failures.isNotEmpty()) {
+            throw IOException(report.failures.joinToString("；"))
         }
+        return report.results.filter { it.matchScore >= AUTO_MATCH_THRESHOLD }.sortedWith(
+            compareByDescending<CoverCandidate> { it.matchScore }
+                .thenBy { candidate ->
+                    when (priority) {
+                        CoverPriority.BANGUMI -> candidate.source != CoverSource.BANGUMI
+                        CoverPriority.VNDB -> candidate.source != CoverSource.VNDB
+                    }
+                }
+                .thenBy { adultProtection && it.sensitive }
+                .thenByDescending { it.height > it.width && it.height > 0 },
+        ).firstOrNull()
+    }
 
     suspend fun download(url: String): ByteArray = Http.getBytes(url, MAX_COVER_BYTES)
 

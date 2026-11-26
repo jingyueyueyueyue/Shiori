@@ -1,6 +1,6 @@
-package org.catsystem2.player
+package org.galplayer.performance
 
-internal class FrameRateSampler(private val windowNanos: Long = 2_000_000_000L) {
+class FrameRateSampler(private val windowNanos: Long = 2_000_000_000L) {
     private data class Reading(val time: Long, val count: Long)
     private val readings = ArrayDeque<Reading>()
 
@@ -24,8 +24,6 @@ internal class FrameRateSampler(private val windowNanos: Long = 2_000_000_000L) 
         }
         val first = readings.first()
         if (first.time == nowNanos) return null
-        // Use the nearest observation before the cutoff to interpolate the
-        // start count. Poll jitter otherwise shortens the window by a full sample.
         val start = maxOf(cutoff, first.time)
         val next = readings[1]
         val fraction = (start - first.time).toDouble() / (next.time - first.time)

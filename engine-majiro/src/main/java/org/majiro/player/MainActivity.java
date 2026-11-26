@@ -9,6 +9,7 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.text.TextUtils;
@@ -156,8 +157,8 @@ public final class MainActivity extends Activity {
         if (root.equals(grantedRoot) || root.startsWith(grantedRoot + "/")) {
             return root;
         }
-        boolean child;
-        try {
+        boolean child = false;
+        if (Build.VERSION.SDK_INT >= 29) try {
             child = DocumentsContract.isChildDocument(
                 getContentResolver(),
                 DocumentsContract.buildDocumentUriUsingTree(tree, grantedRoot),
@@ -226,7 +227,7 @@ public final class MainActivity extends Activity {
         scrollView.setBackgroundColor(this.colors.background);
         scrollView.setClipToPadding(false);
         this.page = new LinearLayout(this);
-        this.page.setOrientation(1);
+        this.page.setOrientation(LinearLayout.VERTICAL);
         this.page.setPadding(Ui.dp(this, 24.0f), Ui.dp(this, 16.0f), Ui.dp(this, 24.0f), Ui.dp(this, 32.0f));
         scrollView.addView(this.page, new FrameLayout.LayoutParams(-1, -2));
         scrollView.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() { // from class: org.majiro.player.MainActivity$$ExternalSyntheticLambda6
@@ -260,7 +261,7 @@ public final class MainActivity extends Activity {
         LinearLayout linearLayout2 = new LinearLayout(this);
         linearLayout2.setGravity(80);
         LinearLayout linearLayout3 = new LinearLayout(this);
-        linearLayout3.setOrientation(1);
+        linearLayout3.setOrientation(LinearLayout.VERTICAL);
         TextView textViewText2 = Ui.text(this, "游戏库", 32.0f, this.colors.ink, true);
         Ui.heading(textViewText2);
         linearLayout3.addView(textViewText2);
@@ -314,7 +315,7 @@ public final class MainActivity extends Activity {
 
     private void renderEmpty() {
         LinearLayout linearLayout = new LinearLayout(this);
-        linearLayout.setOrientation(1);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
         linearLayout.setGravity(1);
         linearLayout.setPadding(Ui.dp(this, 28.0f), Ui.dp(this, 36.0f), Ui.dp(this, 28.0f), Ui.dp(this, 32.0f));
         linearLayout.setBackground(Ui.outlined(this, this.colors, this.colors.surface, 24.0f));
@@ -375,7 +376,7 @@ public final class MainActivity extends Activity {
             int i4 = i3 % i;
             if (i4 == 0) {
                 linearLayout = new LinearLayout(this);
-                linearLayout.setOrientation(0);
+                linearLayout.setOrientation(LinearLayout.HORIZONTAL);
                 LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(-1, -2);
                 layoutParams.setMargins(Ui.dp(this, -6.0f), i3 == 0 ? 0 : Ui.dp(this, 6.0f), Ui.dp(this, -6.0f), 0);
                 this.page.addView(linearLayout, layoutParams);
@@ -401,7 +402,7 @@ public final class MainActivity extends Activity {
 
     private View gameCard(final GameLibrary.Entry entry) {
         LinearLayout linearLayout = new LinearLayout(this);
-        linearLayout.setOrientation(1);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
         linearLayout.setPadding(Ui.dp(this, 12.0f), Ui.dp(this, 12.0f), Ui.dp(this, 12.0f), Ui.dp(this, 15.0f));
         linearLayout.setBackground(Ui.ripple(this, this.colors, this.colors.surface, 20.0f, true));
         linearLayout.setElevation(Ui.dp(this, AppearanceSettings.isDark(this) ? 0.0f : 1.0f));
@@ -514,7 +515,8 @@ public final class MainActivity extends Activity {
 
     private void choose() {
         Intent intent = new Intent("android.intent.action.OPEN_DOCUMENT_TREE");
-        intent.addFlags(193);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION |
+            Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
         startActivityForResult(intent, 1);
     }
 
@@ -526,7 +528,7 @@ public final class MainActivity extends Activity {
         }
         final Uri data = intent.getData();
         try {
-            getContentResolver().takePersistableUriPermission(data, intent.getFlags() & 1);
+            getContentResolver().takePersistableUriPermission(data, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         } catch (Exception e) {
             DiagnosticLog.write("permission", e.toString());
         }
@@ -563,7 +565,7 @@ public final class MainActivity extends Activity {
 
     /* JADX INFO: renamed from: lambda$onActivityResult$9$org-majiro-player-MainActivity, reason: not valid java name */
     /* synthetic */ void m32lambda$onActivityResult$9$orgmajiroplayerMainActivity(int i) {
-        Toast.makeText(this, "发现 " + i + " 个游戏", 0).show();
+        Toast.makeText(this, "发现 " + i + " 个游戏", Toast.LENGTH_SHORT).show();
     }
 
     private void launch(GameLibrary.Entry entry) {

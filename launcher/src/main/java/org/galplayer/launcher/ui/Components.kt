@@ -133,7 +133,7 @@ fun EngineBadge(engine: EngineType, modifier: Modifier = Modifier) {
         Text(
             engine.displayName,
             Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onPrimary,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
         )

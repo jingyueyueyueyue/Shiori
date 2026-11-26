@@ -88,7 +88,7 @@ public final class TranslationSettingsDialog {
     }
 
     private static ArrayAdapter<String> adapter(Activity activity, final Ui.Colors colors, List<String> list) {
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(activity, 17367048, list) { // from class: org.majiro.player.TranslationSettingsDialog.1
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(activity, android.R.layout.simple_spinner_item, list) { // from class: org.majiro.player.TranslationSettingsDialog.1
             @Override // android.widget.ArrayAdapter, android.widget.Adapter
             public View getView(int i, View view, ViewGroup viewGroup) {
                 return TranslationSettingsDialog.spinnerText(super.getView(i, view, viewGroup), colors);
@@ -101,7 +101,7 @@ public final class TranslationSettingsDialog {
                 return textViewSpinnerText;
             }
         };
-        arrayAdapter.setDropDownViewResource(17367049);
+        arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         return arrayAdapter;
     }
 
@@ -169,7 +169,7 @@ public final class TranslationSettingsDialog {
             scrollView.setFillViewport(true);
             scrollView.setBackgroundColor(colors.surface);
             LinearLayout linearLayout = new LinearLayout(activity);
-            linearLayout.setOrientation(1);
+            linearLayout.setOrientation(LinearLayout.VERTICAL);
             linearLayout.setPadding(Ui.dp(activity, 24.0f), 0, Ui.dp(activity, 24.0f), Ui.dp(activity, 8.0f));
             scrollView.addView(linearLayout);
             label(activity, colors, linearLayout, "文本模式");
@@ -193,7 +193,7 @@ public final class TranslationSettingsDialog {
             layoutParams.setMargins(0, Ui.dp(activity, 9.0f), 0, 0);
             linearLayout.addView(textViewText2, layoutParams);
             final LinearLayout linearLayout2 = new LinearLayout(activity);
-            linearLayout2.setOrientation(1);
+            linearLayout2.setOrientation(LinearLayout.VERTICAL);
             linearLayout.addView(linearLayout2, new LinearLayout.LayoutParams(-1, -2));
             label(activity, colors, linearLayout2, "API 地址");
             final EditText editTextField = field(activity, colors, translationSettingsLoad.url, "https://example.com/v1", 17);
@@ -202,7 +202,7 @@ public final class TranslationSettingsDialog {
             final EditText editTextField2 = field(activity, colors, translationSettingsLoad.key, "服务要求时填写", 129);
             editTextField2.setTransformationMethod(PasswordTransformationMethod.getInstance());
             LinearLayout linearLayout3 = new LinearLayout(activity);
-            linearLayout3.setOrientation(0);
+            linearLayout3.setOrientation(LinearLayout.HORIZONTAL);
             linearLayout3.setGravity(16);
             linearLayout3.addView(editTextField2, new LinearLayout.LayoutParams(0, -2, 1.0f));
             final Button button = new Button(activity);
@@ -249,7 +249,7 @@ public final class TranslationSettingsDialog {
             spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() { // from class: org.majiro.player.TranslationSettingsDialog.2
                 @Override // android.widget.AdapterView.OnItemSelectedListener
                 public void onItemSelected(AdapterView<?> adapterView, View view, int i2, long j) {
-                    linearLayout2.setVisibility(i2 == 3 ? 0 : 8);
+                    linearLayout2.setVisibility(i2 == 3 ? View.VISIBLE : View.GONE);
                     textViewText2.setText(TranslationSettingsDialog.modeDescription(i2));
                     textViewText3.setText("保存后应用翻译设置；切换本地汉化需重新进入游戏。");
                 }
@@ -259,7 +259,7 @@ public final class TranslationSettingsDialog {
                 }
             });
             textViewText2.setText(modeDescription(spinner.getSelectedItemPosition()));
-            linearLayout2.setVisibility(spinner.getSelectedItemPosition() == 3 ? 0 : 8);
+            linearLayout2.setVisibility(spinner.getSelectedItemPosition() == 3 ? View.VISIBLE : View.GONE);
             button2.setOnClickListener(new View.OnClickListener() { // from class: org.majiro.player.TranslationSettingsDialog$$ExternalSyntheticLambda5
                 @Override // android.view.View.OnClickListener
                 public final void onClick(View view) {
@@ -365,7 +365,7 @@ public final class TranslationSettingsDialog {
         button2.setTextColor(colors.accent);
         button2.setAllCaps(false);
         button2.setTextSize(14.0f);
-        button2.setTypeface(Typeface.create("sans-serif-medium", 0));
+        button2.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         button2.setOnClickListener(new View.OnClickListener() { // from class: org.majiro.player.TranslationSettingsDialog$$ExternalSyntheticLambda1
             @Override // android.view.View.OnClickListener
             public final void onClick(View view) {
