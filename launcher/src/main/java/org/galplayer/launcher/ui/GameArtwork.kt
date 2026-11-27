@@ -1,5 +1,7 @@
 package org.galplayer.launcher.ui
 
+import org.galplayer.launcher.BuildConfig
+
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -47,7 +49,7 @@ fun rememberArtwork(source: String?, maximumSide: Int = 900): ImageBitmap? {
                     try {
                         connection.connectTimeout = 12_000
                         connection.readTimeout = 18_000
-                        connection.setRequestProperty("User-Agent", "Shiori/0.1.2 (Android)")
+                        connection.setRequestProperty("User-Agent", "Shiori/${BuildConfig.VERSION_NAME} (Android)")
                         connection.inputStream.use { ImageCodec.readLimited(it, 24 * 1024 * 1024) }
                     } finally {
                         connection.disconnect()

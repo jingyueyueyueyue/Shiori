@@ -1,5 +1,7 @@
 package org.galplayer.launcher.cover
 
+import org.galplayer.launcher.BuildConfig
+
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -292,7 +294,7 @@ class CoverSearchClient {
     private companion object {
         const val BANGUMI_URL = "https://api.bgm.tv/v0/search/subjects"
         const val VNDB_URL = "https://api.vndb.org/kana/vn"
-        const val USER_AGENT = "Shiori/0.1.2 (https://github.com/jingyueyueyueyue/Shiori)"
+        const val USER_AGENT = "Shiori/${BuildConfig.VERSION_NAME} (https://github.com/jingyueyueyueyue/Shiori)"
         const val TAG = "ShioriCover"
         const val TEXT_LIMIT = 4 * 1024 * 1024
         const val MAX_COVER_BYTES = 32 * 1024 * 1024

@@ -6,7 +6,7 @@
 
 [下载测试安装包（Releases）](https://github.com/jingyueyueyueyue/Shiori/releases)
 
-> 当前发布的 `v0.1.2` 为 Debug 签名的 `arm64-v8a` 测试版本，仅供体验与测试。
+> 当前发布的 `v0.1.3` 为 Debug 签名的 `arm64-v8a` 测试版本，仅供体验与测试。
 
 ## 为什么选择 Shiori？
 

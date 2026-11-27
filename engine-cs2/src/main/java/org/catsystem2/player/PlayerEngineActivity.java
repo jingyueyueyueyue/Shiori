@@ -2381,7 +2381,7 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
         worker.post(() -> {
             if (session != handle) return;
             if (nativeMessageListAction(handle, task, operation, value) < 0) {
-                fail("消息列表操作失败", new IOException(nativeErrorText()));
+                reportOptionalHostFailure(handle, "消息列表操作失败", nativeErrorText());
             }
         });
     }
@@ -2389,7 +2389,7 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
         worker.post(() -> {
             if (session != handle) return;
             if (nativeSceneToolAction(handle, task, operation, parameter, value) < 0) {
-                fail("场景窗口操作失败", new IOException(nativeErrorText()));
+                reportOptionalHostFailure(handle, "场景窗口操作失败", nativeErrorText());
             }
         });
     }
