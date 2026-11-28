@@ -1803,6 +1803,7 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
             }
             if (page.sound != null) controls.addView(soundRoleSettingsView(page, filling, modified));
             settingsDependencies(page);
+            if (page.reset.isEmpty()) continue;
             Button reset = new Button(this); reset.setText(page.reset);
             reset.setOnClickListener(view -> {
                 page.resetPending = true;
