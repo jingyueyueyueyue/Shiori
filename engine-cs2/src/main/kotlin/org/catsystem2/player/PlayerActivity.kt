@@ -256,6 +256,7 @@ class PlayerActivity : PlayerEngineActivity() {
         @JvmStatic external fun nativeGeneralWindowPolicy(handle: Long): Int
         @JvmStatic external fun nativeGeneralWindowCaption(handle: Long): ByteArray?
         @JvmStatic external fun nativeWindowMode(handle: Long, windowed: Int): Int
+        @JvmStatic external fun nativeRequestFullscreen(handle: Long, fullscreen: Boolean): Int
         @JvmStatic external fun nativeWindowUi(handle: Long): ByteArray?
         @JvmStatic external fun nativeWindowUiAction(handle: Long, request: Long, action: Int, a: Int, b: Int, c: Int): Int
         @JvmStatic external fun nativeSettingsApply(handle: Long, request: Long, record: ByteArray): Int

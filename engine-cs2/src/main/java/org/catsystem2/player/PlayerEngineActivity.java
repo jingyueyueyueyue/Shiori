@@ -156,6 +156,7 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
     // UI-owned inspectors. Their actions are posted back to the engine owner.
     private long messageUiSession;
     private boolean gameFullscreen;
+    private boolean gameStatusBarHidden;
     private volatile int generalWindowPolicy = -1;
     private String generalCamouflageTitle;
     private CharSequence generalNormalTitle;
@@ -238,6 +239,7 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
     private void setLibraryVisible(boolean visible) {
         if (visible) releaseHeldCtrl();
         panel.setVisibility(visible ? View.VISIBLE : View.GONE);
+        applyGameSystemBars();
         onGameViewVisibilityChanged(!visible);
     }
 
@@ -774,7 +776,8 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
         endGameKeyboard(true);
         if (exitDialog != null) exitDialog.dismiss();
         clearMessageInspectors();
-        if (gameFullscreen) setGameFullscreen(false);
+        gameFullscreen = false;
+        gameStatusBarHidden = false;
         launchingTitle = null;
         isolatedSaveRoot = null;
         gameReady = false;
@@ -1197,23 +1200,39 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
         }
     };
 
-    private void setGameFullscreen(boolean fullscreen) {
+    private void applyGameSystemBars() {
+        boolean playing = panel.getVisibility() != View.VISIBLE;
+        boolean fullscreen = playing && gameFullscreen;
+        boolean hideStatusBar = fullscreen || playing && gameStatusBarHidden;
         if (Build.VERSION.SDK_INT >= 30) {
             android.view.WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller == null) throw new IllegalStateException("Window insets controller is unavailable");
-            if (fullscreen) {
+            if (controller == null) return;
+            int status = android.view.WindowInsets.Type.statusBars();
+            int navigation = android.view.WindowInsets.Type.navigationBars();
+            if (hideStatusBar) {
                 controller.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-                controller.hide(android.view.WindowInsets.Type.systemBars());
-            } else {
-                controller.show(android.view.WindowInsets.Type.systemBars());
             }
+            if (hideStatusBar) controller.hide(status);
+            else controller.show(status);
+            if (fullscreen) controller.hide(navigation);
+            else controller.show(navigation);
         } else {
-            getWindow().getDecorView().setSystemUiVisibility(fullscreen
-                ? View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                : View.SYSTEM_UI_FLAG_VISIBLE);
+            View decor = getWindow().getDecorView();
+            int flags = decor.getSystemUiVisibility() & ~(View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            if (hideStatusBar) flags |= View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+            if (fullscreen) flags |= View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+            decor.setSystemUiVisibility(flags);
         }
-        gameFullscreen = fullscreen;
+    }
+
+    private void requestGameFullscreen(long handle, boolean fullscreen) {
+        worker.post(() -> {
+            if (session != handle || paused) return;
+            if (nativeRequestFullscreen(handle, fullscreen) < 0) {
+                stopWithError("提交全屏请求失败", new IOException(nativeErrorText()));
+            }
+        });
     }
 
     private void applyGeneralWindowPolicy(long handle, int policy, byte[] caption) {
@@ -1243,7 +1262,8 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
         try {
             final int windowed;
             if (command == 1) {
-                setGameFullscreen(!gameFullscreen);
+                gameFullscreen = !gameFullscreen;
+                applyGameSystemBars();
                 windowed = gameFullscreen ? 0 : 1;
             } else if (command == 2) {
                 if (!moveTaskToBack(true)) throw new IOException("Unable to minimize the game activity");
@@ -2570,6 +2590,14 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
         Button resume = addPlaybackAction(actions, "继续游戏", () -> {});
         resume.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff9cddbd));
         resume.setTextColor(0xff172522);
+        addPlaybackAction(actions, gameFullscreen ? "退出全屏" : "沉浸全屏",
+            () -> requestGameFullscreen(handle, !gameFullscreen));
+        if (!gameFullscreen) {
+            addPlaybackAction(actions, gameStatusBarHidden ? "显示状态栏" : "隐藏状态栏", () -> {
+                gameStatusBarHidden = !gameStatusBarHidden;
+                applyGameSystemBars();
+            });
+        }
         if (hasVisibleGameMenu()) {
             addPlaybackAction(actions, "原版菜单", () -> showGameMenu(handle, gameMenuRequest, gameMenuItems));
             addPlaybackMenuAction(actions, handle, "游戏内设置", GAME_MENU_EFFECT_SETTINGS);
@@ -2938,6 +2966,7 @@ public abstract class PlayerEngineActivity extends ComponentActivity implements 
         super.onWindowFocusChanged(focused);
         if (worker == null || destroyed) return;
         if (!focused) releaseHeldCtrl();
+        else if (panel != null) applyGameSystemBars();
         final long focusSession = messageUiSession;
         if (focusSession == 0) return;
         worker.post(() -> {
